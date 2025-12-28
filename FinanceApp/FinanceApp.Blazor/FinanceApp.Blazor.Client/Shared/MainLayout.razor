@@ -1,0 +1,79 @@
+﻿@using MudBlazor
+@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="ToggleDrawer" />
+
+        <MudText Typo="Typo.h6" Class="ml-2">
+            Finance App
+        </MudText>
+
+        <MudSpacer />
+
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Inherit"
+                   OnClick="OnLogout">
+            Logout
+        </MudButton>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen"
+               Variant="DrawerVariant.Responsive"
+               Elevation="1">
+
+        <MudNavMenu>
+
+            <MudNavLink Href="/operation-types"
+                        Icon="@Icons.Material.Filled.Category">
+                Operation Types
+            </MudNavLink>
+
+            <MudNavLink Href="/operations"
+                        Icon="@Icons.Material.Filled.AttachMoney">
+                Financial Operations
+            </MudNavLink>
+
+            <MudNavLink Href="/reports"
+                        Icon="@Icons.Material.Filled.Assessment">
+                Reports
+            </MudNavLink>
+
+            <MudNavLink Href="/users"
+                        Icon="@Icons.Material.Filled.People">
+                Users
+            </MudNavLink>
+
+        </MudNavMenu>
+
+    </MudDrawer>
+
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private void OnLogout()
+    {
+        // Later:
+        // - clear JWT
+        // - redirect to login
+    }
+}
