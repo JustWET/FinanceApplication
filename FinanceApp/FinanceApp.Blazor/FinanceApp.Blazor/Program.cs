@@ -11,6 +11,14 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddMudServices();
 
+var apiBaseUrl = builder.Configuration["Api:BaseUrl"];
+builder.Services.AddScoped(sp =>
+    new HttpClient
+    {
+        BaseAddress = new Uri(apiBaseUrl!)
+    });
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

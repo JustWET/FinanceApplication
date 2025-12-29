@@ -1,4 +1,13 @@
 ﻿@page "/operation-types"
 @using MudBlazor
+@inject HttpClient Http
 
 <MudText Typo="Typo.h4">Operation Types</MudText>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Http.GetAsync("operationtypes");
+        Console.WriteLine(response.StatusCode);
+    }
+}
