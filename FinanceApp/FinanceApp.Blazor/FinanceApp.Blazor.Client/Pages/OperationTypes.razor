@@ -1,13 +1,26 @@
 ﻿@page "/operation-types"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
 @using MudBlazor
-@inject HttpClient Http
+@inject IHttpClientFactory HttpClientFactory
+@using System.Net.Http.Json
+
 
 <MudText Typo="Typo.h4">Operation Types</MudText>
 
 @code {
     protected override async Task OnInitializedAsync()
     {
-        var response = await Http.GetAsync("operationtypes");
-        Console.WriteLine(response.StatusCode);
+        var client = HttpClientFactory.CreateClient("AuthorizedApi");
+         
+        try
+        {
+            var data = await client.GetFromJsonAsync<object>("api/operationtypes");
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine(ex.Message);
+            throw;
+        }
     }
 }
