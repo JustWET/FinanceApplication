@@ -11,6 +11,7 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<AuthTokenService>();
 builder.Services.AddScoped<AuthHeaderHandler>();
 
+
 var apiBaseUrl = builder.Configuration["Api:BaseUrl"]
     ?? throw new InvalidOperationException("Api:BaseUrl is not configured");
 

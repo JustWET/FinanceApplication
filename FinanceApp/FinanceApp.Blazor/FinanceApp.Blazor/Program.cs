@@ -1,4 +1,5 @@
 using FinanceApp.Blazor.Client.Pages;
+using FinanceApp.Blazor.Client.Services;
 using FinanceApp.Blazor.Components;
 using MudBlazor.Services;
 

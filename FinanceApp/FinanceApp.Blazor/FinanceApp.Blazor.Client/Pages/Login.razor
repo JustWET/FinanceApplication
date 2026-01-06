@@ -1,4 +1,5 @@
 ﻿@page "/login"
+
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 @using FinanceApp.Blazor.Client.DTOs
@@ -10,24 +11,27 @@
 @inject AuthTokenService TokenService
 @inject NavigationManager Navigation
 
+
+
+
 <MudPaper Class="pa-6 mx-auto mt-10" MaxWidth="400px">
     <MudText Typo="Typo.h5" Class="mb-4">Login</MudText>
 
     <MudTextField @bind-Value="_model.Username"
-                  Label="Username"
-                  Required="true" />
+    Label="Username"
+    Required="true" />
 
     <MudTextField @bind-Value="_model.Password"
-                  Label="Password"
-                  InputType="InputType.Password"
-                  Required="true"
-                  Class="mt-3" />
+    Label="Password"
+    InputType="InputType.Password"
+    Required="true"
+    Class="mt-3" />
 
     <MudButton Variant="Variant.Filled"
-               Color="Color.Primary"
-               FullWidth="true"
-               Class="mt-4"
-               OnClick="LoginAsync">
+    Color="Color.Primary"
+    FullWidth="true"
+    Class="mt-4"
+    OnClick="LoginAsync">
         Login
     </MudButton>
 
