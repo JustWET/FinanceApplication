@@ -1,4 +1,164 @@
 ﻿@page "/reports"
-@using MudBlazor
 
-<MudText Typo="Typo.h4">Reports</MudText>
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using MudBlazor
+@using DTOs
+
+@inject IHttpClientFactory HttpClientFactory
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+
+<MudPaper Class="pa-4" Elevation="2">
+
+    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h5">Reports</MudText>
+    </MudStack>
+
+    <MudDivider Class="my-4" />
+
+    <MudTabs @bind-ActivePanelIndex="_activeTab">
+
+        <MudTabPanel Text="Daily">
+            <MudStack Spacing="3">
+
+                <MudDatePicker Label="Date"
+                               @bind-Date="_dailyDate"
+                               Required="true" />
+
+                <MudButton Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           OnClick="LoadDailyReport">
+                    Generate
+                </MudButton>
+
+                @if (_dailyReport != null)
+                {
+                    @SummarySection(_dailyReport)
+                    @OperationsTable(_dailyReport.Operations)
+                }
+
+            </MudStack>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Period">
+            <MudStack Spacing="3">
+
+                <MudStack Row Spacing="2">
+                    <MudDatePicker Label="Start date"
+                                   @bind-Date="_startDate"
+                                   Required="true" />
+
+                    <MudDatePicker Label="End date"
+                                   @bind-Date="_endDate"
+                                   Required="true" />
+                </MudStack>
+
+                <MudButton Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           OnClick="LoadPeriodReport">
+                    Generate
+                </MudButton>
+
+                @if (_periodReport != null)
+                {
+                    @SummarySection(_periodReport)
+                    @OperationsTable(_periodReport.Operations)
+                }
+
+            </MudStack>
+        </MudTabPanel>
+
+    </MudTabs>
+
+</MudPaper>
+
+@code {
+    private int _activeTab;
+
+    private DateTime? _dailyDate = DateTime.Today;
+    private DateTime? _startDate;
+    private DateTime? _endDate;
+
+    private FinancialReportDto? _dailyReport;
+    private FinancialReportDto? _periodReport;
+
+    private async Task LoadDailyReport()
+    {
+        if (_dailyDate == null)
+            return;
+
+        var client = HttpClientFactory.CreateClient("AuthorizedApi");
+
+        _dailyReport =
+            await client.GetFromJsonAsync<FinancialReportDto>(
+                $"api/reports/daily?date={_dailyDate:yyyy-MM-dd}");
+    }
+
+    private async Task LoadPeriodReport()
+    {
+        if (_startDate == null || _endDate == null)
+            return;
+
+        var client = HttpClientFactory.CreateClient("AuthorizedApi");
+
+        _periodReport =
+            await client.GetFromJsonAsync<FinancialReportDto>(
+                $"api/reports/period?startDate={_startDate:yyyy-MM-dd}&endDate={_endDate:yyyy-MM-dd}");
+    }
+
+    private RenderFragment<FinancialReportDto> SummarySection => report => @<MudGrid Class="mt-4">
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="pa-3" Elevation="0">
+                <MudText Typo="Typo.subtitle2">Income</MudText>
+                <MudText Color="Color.Success" Typo="Typo.h6">
+                    +@report.TotalIncome.ToString("N2")
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="pa-3" Elevation="0">
+                <MudText Typo="Typo.subtitle2">Expenses</MudText>
+                <MudText Color="Color.Error" Typo="Typo.h6">
+                    -@report.TotalExpenses.ToString("N2")
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="pa-3" Elevation="0">
+                <MudText Typo="Typo.subtitle2">Net</MudText>
+                <MudText Typo="Typo.h6">
+                    @report.NetResult.ToString("N2")
+                </MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>;
+
+    private RenderFragment<List<FinancialOperationDto>> OperationsTable => items => @<MudTable Items="items"
+            Hover="true" Bordered="true" Striped="true" Dense="true" Elevation="0" Class="mt-4">
+        <HeaderContent>
+            <MudTh>Date</MudTh>
+            <MudTh>Name</MudTh>
+            <MudTh>Description</MudTh>
+            <MudTh Align="Align.Right">Amount</MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd>@context.Date.ToString("yyyy-MM-dd")</MudTd>
+            <MudTd>@context.OperationTypeName</MudTd>
+            <MudTd>@context.Description</MudTd>
+
+            <MudTd Align="Align.Right">
+                <MudText Color="@(context.IsIncome ? Color.Success : Color.Error)">
+                    @(context.IsIncome ? "+" : "-")@context.Amount.ToString("N2")
+                </MudText>
+            </MudTd>
+        </RowTemplate>
+
+    </MudTable>;
+}
