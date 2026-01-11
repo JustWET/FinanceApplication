@@ -14,35 +14,69 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudText Typo="Typo.h4">Operation Types</MudText>
+<MudPaper Class="pa-4" Elevation="2">
 
-<MudButton Color="Color.Primary" OnClick="OpenCreate">
-    Create
-</MudButton>
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h5">Operation Types</MudText>
 
-<MudTable Items="_items" Class="mt-4">
-    <HeaderContent>
-        <MudTh>Name</MudTh>
-        <MudTh>Type</MudTh>
-        <MudTh></MudTh>
-    </HeaderContent>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenCreate">
+            Create
+        </MudButton>
+    </MudStack>
 
-    <RowTemplate>
-        <MudTd>@context.Name</MudTd>
-        <MudTd>@(context.IsIncome ? "Income" : "Expense")</MudTd>
-        <MudTd>
-            <MudButton Size="Size.Small" OnClick="() => OpenEdit(context)">
-                Edit
-            </MudButton>
+    <MudDivider Class="my-4" />
 
-            <MudButton Size="Size.Small"
-                       Color="Color.Error"
-                       OnClick="() => Delete(context.Id)">
-                Delete
-            </MudButton>
-        </MudTd>
-    </RowTemplate>
-</MudTable>
+    <MudTable Items="_items"
+              Hover="true"
+              Bordered="true"
+              Striped="true"
+              Dense="true"
+              Elevation="0">
+
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Type</MudTh>
+            <MudTh Align="Align.Right">Actions</MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+
+            <MudTd>
+                <MudChip Color="@(context.IsIncome ? Color.Success : Color.Error)"
+                         Variant="Variant.Filled"
+                         Size="Size.Small"
+                         T = "bool">
+                    @(context.IsIncome ? "Income" : "Expense")
+                </MudChip>
+            </MudTd>
+
+            <MudTd Align="Align.Right">
+                <MudButton Size="Size.Small"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           OnClick="() => OpenEdit(context)">
+                    Edit
+                </MudButton>
+
+                <MudButton Size="Size.Small"
+                           Variant="Variant.Filled"
+                           Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.Delete"
+                           Class="ml-2"
+                           OnClick="() => Delete(context.Id)">
+                    Delete
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+
+    </MudTable>
+
+</MudPaper>
 
 <MudDialog @bind-Visible="_dialogOpen">
     <DialogContent>
