@@ -20,9 +20,9 @@
         <MudText Typo="Typo.h5">Operation Types</MudText>
 
         <MudButton Color="Color.Primary"
-                   Variant="Variant.Filled"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="OpenCreate">
+        Variant="Variant.Filled"
+        StartIcon="@Icons.Material.Filled.Add"
+        OnClick="OpenCreate">
             Create
         </MudButton>
     </MudStack>
@@ -30,11 +30,11 @@
     <MudDivider Class="my-4" />
 
     <MudTable Items="_items"
-              Hover="true"
-              Bordered="true"
-              Striped="true"
-              Dense="true"
-              Elevation="0">
+    Hover="true"
+    Bordered="true"
+    Striped="true"
+    Dense="true"
+    Elevation="0">
 
         <HeaderContent>
             <MudTh>Name</MudTh>
@@ -47,28 +47,29 @@
 
             <MudTd>
                 <MudChip Color="@(context.IsIncome ? Color.Success : Color.Error)"
-                         Variant="Variant.Filled"
-                         Size="Size.Small"
-                         T = "bool">
+                Variant="Variant.Filled"
+                Size="Size.Small"
+                T = "bool">
                     @(context.IsIncome ? "Income" : "Expense")
                 </MudChip>
             </MudTd>
 
             <MudTd Align="Align.Right">
                 <MudButton Size="Size.Small"
-                           Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Edit"
-                           OnClick="() => OpenEdit(context)">
-                    Edit
+                Variant="Variant.Filled"
+                Color="Color.Primary"
+                StartIcon="@Icons.Material.Filled.Edit"
+                OnClick="() => OpenEdit(context)">
+                    EditS
                 </MudButton>
 
                 <MudButton Size="Size.Small"
-                           Variant="Variant.Filled"
-                           Color="Color.Error"
-                           StartIcon="@Icons.Material.Filled.Delete"
-                           Class="ml-2"
-                           OnClick="() => Delete(context.Id)">
+                            Variant="Variant.Filled"
+                            Color="Color.Error"
+                            StartIcon="@Icons.Material.Filled.Delete"
+                            Class="ml-2"
+                            Disabled="@IsDeleteDisabled(context.Id)"
+                            OnClick="() => Delete(context.Id)">
                     Delete
                 </MudButton>
             </MudTd>
@@ -78,25 +79,25 @@
 
 </MudPaper>
 
-<MudDialog @bind-Visible="_dialogOpen">
-    <DialogContent>
+    <MudDialog @bind-Visible="_dialogOpen">
+        <DialogContent>
+            <MudForm @ref="form" @bind-IsValid="@success">
+                <MudTextField Label="Name"
+                    @bind-Value="_current.Name"
+                    Required="true" RequiredError="Name is required!" />
 
-        <MudTextField Label="Name"
-        @bind-Value="_current.Name"
-        Required="true" />
+                <MudText Typo="Typo.subtitle2" Class="mt-3">
+                    Type
+                </MudText>
 
-        <MudText Typo="Typo.subtitle2" Class="mt-3">
-            Type
-        </MudText>
+                <MudRadioGroup @bind-Value="_current.IsIncome">
+                    <MudRadio Value="true">Income</MudRadio>
+                    <MudRadio Value="false">Expense</MudRadio>
+                </MudRadioGroup>
+             </MudForm>
+        </DialogContent>
 
-        <MudRadioGroup @bind-Value="_current.IsIncome">
-            <MudRadio Value="true">Income</MudRadio>
-            <MudRadio Value="false">Expense</MudRadio>
-        </MudRadioGroup>
-
-    </DialogContent>
-
-    <DialogActions>
+        <DialogActions>
         <MudButton OnClick="CloseDialog">
             Cancel
         </MudButton>
@@ -105,18 +106,25 @@
         OnClick="Save">
             Save
         </MudButton>
-    </DialogActions>
-</MudDialog>
+        </DialogActions>
+    </MudDialog>
 
 @code {
+    bool success = false;
+    MudForm form;
+
     private List<OperationTypeDto> _items = new();
+    private HashSet<Guid> _usedTypeIds = new();
 
     private bool _dialogOpen;
     private OperationTypeDto _current = new();
 
+    private bool IsDeleteDisabled(Guid typeId) => _usedTypeIds.Contains(typeId);
+
     protected override async Task OnInitializedAsync()
     {
         await Load();
+        await LoadUsedTypes();
     }
 
     private async Task Load()
@@ -132,6 +140,19 @@
             Console.WriteLine(ex.Message);
             throw;
         }
+    }
+
+    private async Task LoadUsedTypes()
+    {
+        var client = HttpClientFactory.CreateClient("AuthorizedApi");
+
+        var usage = await client.GetFromJsonAsync<List<OperationTypeUsageDto>>(
+                "api/operationtypes/type-usage") ?? [];
+
+        _usedTypeIds = usage
+            .Where(x => x.Count > 0)
+            .Select(x => x.OperationTypeId)
+            .ToHashSet();
     }
 
     private void OpenCreate()
@@ -166,6 +187,11 @@
 
     private async Task Save()
     {
+        await form.Validate();
+
+        if(!success)
+            return;
+
         var client = HttpClientFactory.CreateClient("AuthorizedApi");
 
         if (_current.Id == Guid.Empty)
@@ -182,4 +208,6 @@
     {
         _dialogOpen = false;
     }
+
+
 }

@@ -80,5 +80,12 @@ namespace PersonalFinanceDataManager.Core.Controllers
             await _service.DeleteAsync(userId, id);
             return NoContent();
         }
+
+        [HttpGet("type-usage")]
+        public async Task<ActionResult<List<OperationTypeUsageDto>>> GetTypeUsage()
+        {
+            var userId = GetUserId();
+            return Ok(await _service.GetOperationTypeUsageAsync(userId));
+        }
     }
 }

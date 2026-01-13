@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.EntityFrameworkCore;
 using PersonalFinanceDataManager.Core.DTOs.OperationType;
 using PersonalFinanceDataManager.Core.Services.Interfaces;
 using PersonalFinanceDataManager.Data.Repositories.Interfaces;
@@ -84,6 +85,21 @@ namespace PersonalFinanceDataManager.Core.Services
                 throw new Exception("Cannot delete operation type because it is used by existing financial operations.");
 
             await _typesRepository.DeleteAsync(userId, id);
+        }
+
+        public async Task<List<OperationTypeUsageDto>> GetOperationTypeUsageAsync(Guid userId)
+        {
+            var operations = await _operationsRepository.GetAllAsync(userId);
+                
+            return operations
+                .Where(o => o.UserId == userId)
+                .GroupBy(o => o.TypeId)
+                .Select(g => new OperationTypeUsageDto
+                {
+                    OperationTypeId = g.Key,
+                    Count = g.Count()
+                })
+                .ToList();
         }
 
         private OperationTypeDto MapToDto(OperationType entity)

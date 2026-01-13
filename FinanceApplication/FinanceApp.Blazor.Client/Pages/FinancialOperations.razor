@@ -106,26 +106,28 @@
 
 <MudDialog @bind-Visible="_dialogOpen">
     <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success">
+            <MudTextField T="decimal"
+                          Label="Amount"
+                          @bind-Value="_current.Amount" Validation="@(new Func<decimal, string?>(AmountValidation))"
+                          Required="true" RequiredError="Amount is required!" />
 
-        <MudTextField T="decimal"
-                         Label="Amount"
-                         @bind-Value="_current.Amount"
-                         Required="true" />
+            <MudTextField Label="Description"
+                          @bind-Value="_current.Description"
+                          Required="true" RequiredError="Description is required!" />
 
-        <MudTextField Label="Note"
-                      @bind-Value="_current.Description" />
-
-        <MudSelect Label="Operation Type"
-                   @bind-Value="_current.OperationTypeId"
-                   Required="true">
-            @foreach (var type in _operationTypes)
-            {
-                <MudSelectItem Value="@type.Id">
-                    @type.Name (@(type.IsIncome ? "Income" : "Expense"))
-                </MudSelectItem>
-            }
-        </MudSelect>
-
+            <MudSelect T="Guid?"
+                       Label="Operation Type"
+                       @bind-Value="_current.OperationTypeId"
+                       Required="true" RequiredError="Operation Type is required!">
+                @foreach (var type in _operationTypes)
+                {
+                    <MudSelectItem Value="@type.Id">
+                        @type.Name (@(type.IsIncome ? "Income" : "Expense"))
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        </MudForm>
     </DialogContent>
 
     <DialogActions>
@@ -140,6 +142,9 @@
 </MudDialog>
 
 @code {
+    bool success = false;
+    MudForm form;
+
     private bool _dialogOpen;
 
     private List<FinancialOperationDto> _items = new();
@@ -221,6 +226,11 @@
 
     private async Task Save()
     {
+        await form.Validate();
+
+        if (!success)
+            return;
+
         var client = HttpClientFactory.CreateClient("AuthorizedApi");
 
         if (_current.Id == Guid.Empty)
@@ -237,5 +247,12 @@
     private void CloseDialog()
     {
         _dialogOpen = false;
+    }
+
+    private string? AmountValidation(decimal amount)
+    {
+        if (amount <= 0)
+            return "Amount must be greater than zero!";
+        return null;
     }
 }
