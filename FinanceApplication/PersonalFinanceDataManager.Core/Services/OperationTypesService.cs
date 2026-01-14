@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.EntityFrameworkCore;
-using PersonalFinanceDataManager.Core.DTOs.OperationType;
+﻿using PersonalFinanceDataManager.Core.DTOs.OperationType;
 using PersonalFinanceDataManager.Core.Services.Interfaces;
 using PersonalFinanceDataManager.Data.Repositories.Interfaces;
 using PersonalFinanceDataManager.Domain.Entities;

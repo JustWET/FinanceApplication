@@ -1,5 +1,4 @@
 ﻿using PersonalFinanceDataManager.Core.DTOs.OperationType;
-using PersonalFinanceDataManager.Domain.Entities;
 
 namespace PersonalFinanceDataManager.Core.Services.Interfaces
 {

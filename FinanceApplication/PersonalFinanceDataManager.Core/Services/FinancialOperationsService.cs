@@ -25,11 +25,6 @@ namespace PersonalFinanceDataManager.Core.Services
         {
             var operations = await _operationsRepository.GetAllAsync(userId);
 
-            var typeIds = operations
-                .Select(o => o.TypeId)
-                .Distinct()
-                .ToList();
-
             var types = await _typesRepository.GetAllAsync(userId);
 
             return operations

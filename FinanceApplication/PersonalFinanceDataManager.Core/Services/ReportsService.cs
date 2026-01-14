@@ -23,8 +23,7 @@ namespace PersonalFinanceDataManager.Core.Services
             var types = await _typesRepository.GetAllAsync(userId);
 
             var filtered = operations
-                .Where(o => !o.IsDeleted && o.Date.Date == date.Date)
-                .ToList();
+                .Where(o => !o.IsDeleted && o.Date.Date == date.Date);
 
             var dtos = MapToDtoList(filtered, types);
 
@@ -45,11 +44,10 @@ namespace PersonalFinanceDataManager.Core.Services
             var types = await _typesRepository.GetAllAsync(userId);
 
             var filtered = operations
-                .Where(o => 
+                .Where(o =>
                     !o.IsDeleted &&
                     o.Date.Date >= startDate.Date &&
-                    o.Date.Date <= endDate.Date)
-                .ToList();
+                    o.Date.Date <= endDate.Date);
 
             var dtos = MapToDtoList(filtered, types);
 
@@ -64,9 +62,9 @@ namespace PersonalFinanceDataManager.Core.Services
             };
         }
 
-        private List<FinancialOperationDto> MapToDtoList(
-        List<FinancialOperation> operations,
-        List<OperationType> types)
+        private IEnumerable<FinancialOperationDto> MapToDtoList(
+            IEnumerable<FinancialOperation> operations,
+            List<OperationType> types)
         {
             return operations
                 .Select(op =>
@@ -82,8 +80,7 @@ namespace PersonalFinanceDataManager.Core.Services
                         Description = op.Note,
                         IsIncome = type.IsIncome
                     };
-                })
-                .ToList();
+                }).AsEnumerable();
         }
     }
 }

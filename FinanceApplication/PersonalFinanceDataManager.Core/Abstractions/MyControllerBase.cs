@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PersonalFinanceDataManager.Domain.Entities;
 using System.Security.Claims;
 
 namespace PersonalFinanceDataManager.Core.Abstractions

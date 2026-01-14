@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using PersonalFinanceDataManager.Core.Abstractions;
 using PersonalFinanceDataManager.Core.DTOs.OperationType;
 using PersonalFinanceDataManager.Core.Services.Interfaces;
-using PersonalFinanceDataManager.Domain.Entities;
 
 namespace PersonalFinanceDataManager.Core.Controllers
 {

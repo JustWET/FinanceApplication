@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PersonalFinanceDataManager.Core.DTOs;
 using PersonalFinanceDataManager.Core.Services.Interfaces;
-using PersonalFinanceDataManager.Domain.Entities;
 
 namespace PersonalFinanceDataManager.Core.Controllers
 {
