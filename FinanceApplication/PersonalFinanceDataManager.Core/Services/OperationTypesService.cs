@@ -37,6 +37,9 @@ namespace PersonalFinanceDataManager.Core.Services
             if (string.IsNullOrWhiteSpace(typeDto.Name))
                 throw new Exception("Name cannot be empty.");
 
+            if (await _typesRepository.ExistsWithNameAsync(userId, typeDto.Name))
+                throw new Exception("Operation type with this name already exists");
+
             var entity = new OperationType
             {
                 Id = Guid.NewGuid(),
@@ -56,6 +59,9 @@ namespace PersonalFinanceDataManager.Core.Services
 
             if (existing == null)
                 throw new Exception("Operation type not found.");
+
+            if (await _typesRepository.ExistsWithNameAsync(userId, typeDto.Name, typeDto.Id))
+                throw new Exception("Operation type with this name already exists");
 
             if (existing.UserId != userId)
                 throw new Exception("You do not have permission to update this operation type.");

@@ -9,5 +9,6 @@ namespace PersonalFinanceDataManager.Data.Repositories.Interfaces
         Task AddAsync(OperationType type);
         Task UpdateAsync(OperationType type);
         Task DeleteAsync(Guid userId, Guid id);
+        Task<bool> ExistsWithNameAsync(Guid userId, string name, Guid? excludeId = null);
     }
 }

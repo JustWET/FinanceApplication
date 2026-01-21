@@ -54,5 +54,17 @@ namespace PersonalFinanceDataManager.Data.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task<bool> ExistsWithNameAsync(Guid userId, string name, Guid? excludeId = null)
+        {
+            var query = _context.OperationTypes
+                .Where(x => x.UserId == userId &&
+                            x.Name.ToLower() == name.ToLower());
+
+            if (excludeId.HasValue)
+                query = query.Where(x => x.Id != excludeId.Value);
+
+            return await query.AnyAsync();
+        }
     }
 }
