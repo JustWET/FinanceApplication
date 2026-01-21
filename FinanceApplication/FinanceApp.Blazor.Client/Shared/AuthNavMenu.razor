@@ -1,0 +1,44 @@
+﻿@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using MudBlazor
+@using Services
+
+@inject NavigationManager Navigation
+@inject AuthStateService AuthState
+
+@if (AuthState.IsAuthenticated)
+{
+    <MudNavLink Href="/operation-types" Icon="@Icons.Material.Filled.Category">
+        Operation Types
+    </MudNavLink>
+
+    <MudNavLink Href="/operations" Icon="@Icons.Material.Filled.AttachMoney">
+        Financial Operations
+    </MudNavLink>
+
+    <MudNavLink Href="/reports" Icon="@Icons.Material.Filled.Assessment">
+        Reports
+    </MudNavLink>
+}
+else
+{
+    <MudNavLink Href="/register" Icon="@Icons.Material.Filled.AppRegistration">
+        Registration
+    </MudNavLink>
+
+    <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login">
+        Login
+    </MudNavLink>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= StateHasChanged;
+    }
+}

@@ -5,6 +5,7 @@
 
 @inject AuthTokenService TokenService
 @inject NavigationManager Navigation
+@inject AuthStateService AuthState
 
 <MudButton Variant="Variant.Text"
            Color="Color.Inherit"
@@ -16,6 +17,7 @@
     private async Task LogoutAsync()
     {
         await TokenService.RemoveTokenAsync();
+        AuthState.SetAuthenticated(false);
         Navigation.NavigateTo("/login", true);
     }
 }

@@ -7,10 +7,13 @@
 @using MudBlazor
 @using DTOs
 @using Blazored.LocalStorage
+@using Services
 
 @inject IHttpClientFactory HttpClientFactory
 @inject IDialogService DialogService
 @inject ILocalStorageService LocalStorage
+@inject AuthStateService AuthState
+@inject NavigationManager Navigation
 
 <MudThemeProvider />
 <MudDialogProvider />
@@ -153,6 +156,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (!AuthState.IsAuthenticated)
+            Navigation.NavigateTo("/login");
+
         await LoadOperationTypes();
         await Load();
     }

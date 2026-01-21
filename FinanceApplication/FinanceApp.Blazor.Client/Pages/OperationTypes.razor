@@ -6,9 +6,12 @@
 @using FinanceApp.Blazor.Client.Shared
 @using MudBlazor
 @using DTOs
+@using Services
 
 @inject IHttpClientFactory HttpClientFactory
 @inject IDialogService DialogService
+@inject AuthStateService AuthState
+@inject NavigationManager Navigation
 
 <MudThemeProvider />
 <MudDialogProvider />
@@ -124,6 +127,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (!AuthState.IsAuthenticated)
+            Navigation.NavigateTo("/login");
+
         await Load();
         await LoadUsedTypes();
     }

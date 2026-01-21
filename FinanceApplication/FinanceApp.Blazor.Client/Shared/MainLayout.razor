@@ -11,9 +11,9 @@
 
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                       Color="Color.Inherit"
-                       Edge="Edge.Start"
-                       OnClick="ToggleDrawer" />
+        Color="Color.Inherit"
+        Edge="Edge.Start"
+        OnClick="ToggleDrawer" />
 
         <MudText Typo="Typo.h6" Class="ml-2">
             Finance App
@@ -25,40 +25,12 @@
     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen"
-               Variant="DrawerVariant.Mini"
-               Elevation="1">
+    Variant="DrawerVariant.Persistent"
+    Elevation="1">
 
         <MudNavMenu>
 
-            <MudNavLink Href="/register"
-            Icon="@Icons.Material.Filled.AppRegistration">
-                Registration
-            </MudNavLink>
-
-            <MudNavLink Href="/login"
-            Icon="@Icons.Material.Filled.Login">
-                Login
-            </MudNavLink>
-
-            <MudNavLink Href="/operation-types"
-            Icon="@Icons.Material.Filled.Category">
-                Operation Types
-            </MudNavLink>
-
-            <MudNavLink Href="/operations"
-            Icon="@Icons.Material.Filled.AttachMoney">
-                Financial Operations
-            </MudNavLink>
-
-            <MudNavLink Href="/reports"
-            Icon="@Icons.Material.Filled.Assessment">
-                Reports
-            </MudNavLink>
-
-@*             <MudNavLink Href="/users"
-            Icon="@Icons.Material.Filled.People">
-                Users
-            </MudNavLink> *@
+            <AuthNavMenu />
 
         </MudNavMenu>
 

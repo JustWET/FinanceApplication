@@ -10,9 +10,7 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject AuthTokenService TokenService
 @inject NavigationManager Navigation
-
-
-
+@inject AuthStateService AuthState
 
 <MudPaper Class="pa-6 mx-auto mt-10" MaxWidth="400px">
     <MudText Typo="Typo.h5" Class="mb-4">Login</MudText>
@@ -52,6 +50,15 @@
     private readonly LoginRequest _model = new();
     private string? _error;
 
+    protected override async Task OnInitializedAsync()
+    {
+        var hasToken = await TokenService.HasTokenAsync();
+        AuthState.SetAuthenticated(hasToken);
+
+        if (hasToken)
+            Navigation.NavigateTo("/operation-types");
+    }
+
     private async Task LoginAsync()
     {
         _error = null;
@@ -79,6 +86,8 @@
             }
 
             await TokenService.SetTokenAsync(result.Token);
+
+            AuthState.SetAuthenticated(true);
 
             Navigation.NavigateTo("/operation-types", true);
         }
