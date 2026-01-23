@@ -1,0 +1,11 @@
+image: mcr.microsoft.com/dotnet/sdk:8.0
+
+stages:
+  - build
+
+build_solution:
+  stage: build
+  script:
+    - dotnet --version
+    - dotnet restore
+    - dotnet build --configuration Release
