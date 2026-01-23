@@ -1,0 +1,95 @@
+image: mcr.microsoft.com/dotnet/sdk:8.0
+
+stages:
+  - build
+  - publish
+  - deploy
+
+variables:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+# ---------- BUILD ----------
+
+build_projects:
+  stage: build
+  script:
+    - cd FinanceApplication
+
+    - dotnet restore FinanceApp.Blazor/FinanceApp.Blazor.csproj
+    - dotnet restore FinanceApp.Blazor.Client/FinanceApp.Blazor.Client.csproj
+    - dotnet restore PersonalFinanceDataManager.Core/PersonalFinanceDataManager.Core.csproj
+    - dotnet restore PersonalFinanceDataManager.Data/PersonalFinanceDataManager.Data.csproj
+    - dotnet restore PersonalFinanceDataManager.Domain/PersonalFinanceDataManager.Domain.csproj
+
+    - dotnet build FinanceApp.Blazor/FinanceApp.Blazor.csproj -c Release --no-restore
+    - dotnet build FinanceApp.Blazor.Client/FinanceApp.Blazor.Client.csproj -c Release --no-restore
+    - dotnet build PersonalFinanceDataManager.Core/PersonalFinanceDataManager.Core.csproj -c Release --no-restore
+    - dotnet build PersonalFinanceDataManager.Data/PersonalFinanceDataManager.Data.csproj -c Release --no-restore
+    - dotnet build PersonalFinanceDataManager.Domain/PersonalFinanceDataManager.Domain.csproj -c Release --no-restore
+
+# ---------- PUBLISH ----------
+
+publish_api:
+  stage: publish
+  script:
+    - cd FinanceApplication
+    - dotnet publish PersonalFinanceDataManager.Core/PersonalFinanceDataManager.Core.csproj -c Release -o ../publish/api
+  artifacts:
+    paths:
+      - publish/api
+
+publish_client:
+  stage: publish
+  script:
+    - cd FinanceApplication
+    - dotnet publish FinanceApp.Blazor/FinanceApp.Blazor.csproj -c Release -o ../publish/client
+  artifacts:
+    paths:
+      - publish/client
+
+# ---------- DEPLOY ----------
+
+deploy_api:
+  stage: deploy
+  image: alpine:latest
+  dependencies:
+    - publish_api
+  before_script:
+    - apk add --no-cache curl libxml2-utils zip
+  script:
+    - cd publish/api
+    - zip -r ../api.zip .
+    - cd ..
+
+    - API_USER=$(xmllint --xpath "string(//publishProfile/@userName)" $AZURE_API_PUBLISH_PROFILE)
+    - API_PASS=$(xmllint --xpath "string(//publishProfile/@userPWD)" $AZURE_API_PUBLISH_PROFILE)
+    - API_URL=$(xmllint --xpath "string(//publishProfile/@publishUrl)" $AZURE_API_PUBLISH_PROFILE)
+
+    - echo "Deploying API to $API_URL"
+
+    - curl -f -X POST -u "$API_USER:$API_PASS" --data-binary @"api.zip" "https://$API_URL/api/zipdeploy"
+  only:
+    - main
+
+deploy_client:
+  stage: deploy
+  image: alpine:latest
+  dependencies:
+    - publish_client
+  before_script:
+    - apk add --no-cache curl libxml2-utils zip
+  script:
+    - cd publish/client
+    - zip -r ../client.zip .
+    - cd ..
+
+    - CLIENT_USER=$(xmllint --xpath "string(//publishProfile/@userName)" $AZURE_CLIENT_PUBLISH_PROFILE)
+    - CLIENT_PASS=$(xmllint --xpath "string(//publishProfile/@userPWD)" $AZURE_CLIENT_PUBLISH_PROFILE)
+    - CLIENT_URL=$(xmllint --xpath "string(//publishProfile/@publishUrl)" $AZURE_CLIENT_PUBLISH_PROFILE)
+
+    - echo "Deploying Client to $CLIENT_URL"
+
+    - curl -f -X POST -u "$CLIENT_USER:$CLIENT_PASS" --data-binary @"client.zip" "https://$CLIENT_URL/api/zipdeploy"
+  only:
+    - main
+
