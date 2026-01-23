@@ -2,6 +2,7 @@ image: mcr.microsoft.com/dotnet/sdk:8.0
 
 stages:
   - build
+  - test
   - publish
   - deploy
 
@@ -27,10 +28,23 @@ build_projects:
     - dotnet build PersonalFinanceDataManager.Data/PersonalFinanceDataManager.Data.csproj -c Release --no-restore
     - dotnet build PersonalFinanceDataManager.Domain/PersonalFinanceDataManager.Domain.csproj -c Release --no-restore
 
+# ---------- TEST ----------
+
+test:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - cd FinanceApplication
+    - dotnet test PersonalFinanceDataManager.Tests/PersonalFinanceDataManager.Tests.csproj --configuration Release
+  needs:
+    - build_projects
+
 # ---------- PUBLISH ----------
 
 publish_api:
   stage: publish
+  needs:
+    - test
   script:
     - cd FinanceApplication
     - dotnet publish PersonalFinanceDataManager.Core/PersonalFinanceDataManager.Core.csproj -c Release -o ../publish/api
@@ -40,6 +54,8 @@ publish_api:
 
 publish_client:
   stage: publish
+  needs:
+    - test
   script:
     - cd FinanceApplication
     - dotnet publish FinanceApp.Blazor/FinanceApp.Blazor.csproj -c Release -o ../publish/client
@@ -51,6 +67,8 @@ publish_client:
 
 deploy_api:
   stage: deploy
+  needs:
+    - publish_api
   image: alpine:latest
   dependencies:
     - publish_api
@@ -72,6 +90,8 @@ deploy_api:
     - main
 
 deploy_client:
+  needs:
+    - publish_client
   stage: deploy
   image: alpine:latest
   dependencies:
