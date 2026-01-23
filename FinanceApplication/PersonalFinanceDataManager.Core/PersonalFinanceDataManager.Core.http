@@ -1,0 +1,6 @@
+@PersonalFinanceDataManager.Core_HostAddress = http://localhost:5212
+
+GET {{PersonalFinanceDataManager.Core_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,100 @@
+﻿@page "/"
+@page "/register"
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using FinanceApp.Blazor.Client.DTOs
+@using System.Net.Http.Json
+@using MudBlazor
+@using Services
+
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@inject AuthTokenService TokenService
+@inject AuthStateService AuthState
+
+<MudPaper Class="pa-6 mx-auto mt-10" MaxWidth="400px">
+    <MudText Typo="Typo.h5" Class="mb-4">Register</MudText>
+
+    <MudTextField @bind-Value="_model.Username"
+                  Label="Username"
+                  Required="true" />
+
+    <MudTextField @bind-Value="_model.Password"
+                  Label="Password"
+                  InputType="InputType.Password"
+                  Required="true"
+                  Class="mt-3" />
+
+    <MudTextField @bind-Value="_confirmPassword"
+                  Label="Confirm password"
+                  InputType="InputType.Password"
+                  Required="true"
+                  Class="mt-3" />
+
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               FullWidth="true"
+               Class="mt-4"
+               OnClick="RegisterAsync">
+        Register
+    </MudButton>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <MudText Color="Color.Error" Class="mt-2">
+            @_error
+        </MudText>
+    }
+
+    <MudText Class="mt-4">
+        Already have an account?
+        <MudLink Href="/login">Login</MudLink>
+    </MudText>
+</MudPaper>
+
+@code {
+    private readonly LoginRequest _model = new();
+    private string _confirmPassword = string.Empty;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var hasToken = await TokenService.HasTokenAsync();
+        AuthState.SetAuthenticated(hasToken);
+
+        if (hasToken)
+            Navigation.NavigateTo("/operation-types");
+    }
+
+    private async Task RegisterAsync()
+    {
+        _error = null;
+
+        if (_model.Password != _confirmPassword)
+        {
+            _error = "Passwords do not match";
+            return;
+        }
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("PublicApi");
+
+            var response = await client.PostAsJsonAsync(
+                "api/Users/register", _model);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = "Registration failed";
+                return;
+            }
+
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}
