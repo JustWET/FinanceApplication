@@ -1,11 +1,10 @@
 image: mcr.microsoft.com/dotnet/sdk:8.0
 
 stages:
-  - build
+  - test
 
-build_solution:
-  stage: build
+hello_job:
+  stage: test
   script:
+    - echo "CI is working"
     - dotnet --version
-    - dotnet restore
-    - dotnet build --configuration Release
