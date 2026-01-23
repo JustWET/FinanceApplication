@@ -1,0 +1,23 @@
+﻿@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using MudBlazor
+@using Services
+
+@inject AuthTokenService TokenService
+@inject NavigationManager Navigation
+@inject AuthStateService AuthState
+
+<MudButton Variant="Variant.Text"
+           Color="Color.Inherit"
+           OnClick="LogoutAsync">
+    Logout
+</MudButton>
+
+@code {
+    private async Task LogoutAsync()
+    {
+        await TokenService.RemoveTokenAsync();
+        AuthState.SetAuthenticated(false);
+        Navigation.NavigateTo("/login", true);
+    }
+}
