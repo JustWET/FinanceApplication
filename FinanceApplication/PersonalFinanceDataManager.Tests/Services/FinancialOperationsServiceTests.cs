@@ -2,6 +2,8 @@
 using PersonalFinanceDataManager.Core.Services;
 using PersonalFinanceDataManager.Domain.Entities;
 using PersonalFinanceDataManager.Data.Repositories.Interfaces;
+using PersonalFinanceDataManager.Core.DTOs.FinancialOperation;
+using System;
 
 namespace PersonalFinanceDataManager.Tests.Services
 {
@@ -20,130 +22,267 @@ namespace PersonalFinanceDataManager.Tests.Services
             _service = new FinancialOperationsService(_operationsRepositoryMock.Object, _typesRepositoryMock.Object);
         }
 
-        //[Fact]
-        //public async Task GetAllAsync_ShouldReturn_ListOfOperations()
-        //{
-        //    var ops = new List<FinancialOperation>
-        //    {
-        //        new FinancialOperation { Id = Guid.NewGuid(), Amount = 100 }
-        //    };
+        // ---------- GetAllAsync ----------
 
-        //    _operationsRepositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(ops);
+        [Fact]
+        public async Task GetAllAsync_ShouldReturnRepositoryResult()
+        {
+            var userId = Guid.NewGuid();
+            var list = new List<FinancialOperation>();
 
-        //    var result = await _service.GetAllAsync();
+            _operationsRepositoryMock
+                .Setup(r => r.GetAllAsync(userId))
+                .ReturnsAsync(list);
 
-        //    Assert.NotNull(result);
-        //    Assert.Single(result);
-        //}
+            var result = await _service.GetAllAsync(userId);
 
-        //[Fact]
-        //public async Task GetByIdAsync_ShouldReturnOperation_WhenExists()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var op = new FinancialOperation { Id = id };
+            Assert.Equal(list, result);
+        }
 
-        //    _operationsRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(op);
+        // ---------- GetAllDtosAsync ----------
 
-        //    var result = await _service.GetByIdAsync(id);
+        [Fact]
+        public async Task GetAllDtosAsync_ShouldMapOperationsWithTypes()
+        {
+            var userId = Guid.NewGuid();
+            var typeId = Guid.NewGuid();
 
-        //    Assert.Equal(id, result.Id);
-        //}
+            var operations = new List<FinancialOperation>
+            {
+                new FinancialOperation { Id = Guid.NewGuid(), UserId = userId, TypeId = typeId, Amount = 10 }
+            };
 
-        //[Fact]
-        //public async Task GetByIdAsync_ShouldThrow_WhenNotFound()
-        //{
-        //    var id = Guid.NewGuid();
+                var types = new List<OperationType>
+            {
+                new OperationType { Id = typeId, Name = "Food", IsIncome = false }
+            };
 
-        //    _operationsRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((FinancialOperation)null);
+            _operationsRepositoryMock.Setup(r => r.GetAllAsync(userId)).ReturnsAsync(operations);
+            _typesRepositoryMock.Setup(r => r.GetAllAsync(userId)).ReturnsAsync(types);
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.GetByIdAsync(id));
-        //}
+            var result = await _service.GetAllDtosAsync(userId);
 
-        //[Fact]
-        //public async Task CreateAsync_ShouldThrow_WhenAmountInvalid()
-        //{
-        //    var op = new FinancialOperation { Amount = 0 };
+            Assert.Single(result);
+            Assert.Equal("Food", result[0].OperationTypeName);
+            Assert.Equal(10, result[0].Amount);
+        }
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.CreateAsync(op));
-        //}
+        // ---------- GetByIdAsync ----------
 
-        //[Fact]
-        //public async Task CreateAsync_ShouldThrow_WhenOperationTypeDoesNotExist()
-        //{
-        //    var op = new FinancialOperation { Amount = 100, TypeId = Guid.NewGuid() };
+        [Fact]
+        public async Task GetByIdAsync_ShouldReturnEntity_WhenExists()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
 
-        //    _typesRepositoryMock.Setup(r => r.GetByIdAsync(op.TypeId)).ReturnsAsync((OperationType)null);
+            var op = new FinancialOperation { Id = id };
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.CreateAsync(op));
-        //}
+            _operationsRepositoryMock.Setup(r => r.GetByIdAsync(userId, id)).ReturnsAsync(op);
 
-        //[Fact]
-        //public async Task CreateAsync_ShouldCallAdd_WhenValid()
-        //{
-        //    var type = new OperationType { Id = Guid.NewGuid() };
-        //    var op = new FinancialOperation { Amount = 100, TypeId = type.Id };
+            var result = await _service.GetByIdAsync(userId, id);
 
-        //    _typesRepositoryMock.Setup(r => r.GetByIdAsync(type.Id)).ReturnsAsync(type);
+            Assert.Equal(op, result);
+        }
 
-        //    var result = await _service.CreateAsync(op);
+        [Fact]
+        public async Task GetByIdAsync_ShouldThrow_WhenNotFound()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
 
-        //    _operationsRepositoryMock.Verify(r => r.AddAsync(op), Times.Once);
-        //    Assert.Equal(op, result);
-        //}
+            _operationsRepositoryMock.Setup(r => r.GetByIdAsync(userId, id)).ReturnsAsync((FinancialOperation?)null);
 
-        //[Fact]
-        //public async Task UpdateAsync_ShouldThrow_WhenNotFound()
-        //{
-        //    var op = new FinancialOperation { Id = Guid.NewGuid() };
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.GetByIdAsync(userId, id));
+        }
 
-        //    _operationsRepositoryMock.Setup(r => r.GetByIdAsync(op.Id)).ReturnsAsync((FinancialOperation)null);
+        // ---------- GetDtoByIdAsync ----------
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.UpdateAsync(op));
-        //}
+        [Fact]
+        public async Task GetDtoByIdAsync_ShouldReturnDto_WhenOperationAndTypeExist()
+        {
+            var userId = Guid.NewGuid();
+            var opId = Guid.NewGuid();
+            var typeId = Guid.NewGuid();
 
-        //[Fact]
-        //public async Task UpdateAsync_ShouldThrow_WhenAmountInvalid()
-        //{
-        //    var op = new FinancialOperation { Id = Guid.NewGuid(), Amount = 0 };
+            var op = new FinancialOperation { Id = opId, TypeId = typeId, Amount = 5 };
+            var type = new OperationType { Id = typeId, Name = "Salary", IsIncome = true };
 
-        //    _operationsRepositoryMock.Setup(r => r.GetByIdAsync(op.Id)).ReturnsAsync(new FinancialOperation());
+            _operationsRepositoryMock.Setup(r => r.GetByIdAsync(userId, opId)).ReturnsAsync(op);
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, typeId)).ReturnsAsync(type);
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.UpdateAsync(op));
-        //}
+            var result = await _service.GetDtoByIdAsync(userId, opId);
 
-        //[Fact]
-        //public async Task UpdateAsync_ShouldThrow_WhenOperationTypeDoesNotExist()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var op = new FinancialOperation { Id = id, Amount = 10, TypeId = Guid.NewGuid() };
+            Assert.Equal("Salary", result.OperationTypeName);
+            Assert.True(result.IsIncome);
+        }
 
-        //    _operationsRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(new FinancialOperation());
-        //    _typesRepositoryMock.Setup(r => r.GetByIdAsync(op.TypeId)).ReturnsAsync((OperationType)null);
+        [Fact]
+        public async Task GetDtoByIdAsync_ShouldThrow_WhenOperationNotFound()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.UpdateAsync(op));
-        //}
+            _operationsRepositoryMock.Setup(r => r.GetByIdAsync(userId, id)).ReturnsAsync((FinancialOperation?)null);
 
-        //[Fact]
-        //public async Task DeleteAsync_ShouldThrow_WhenNotFound()
-        //{
-        //    var id = Guid.NewGuid();
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.GetDtoByIdAsync(userId, id));
+        }
 
-        //    _operationsRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((FinancialOperation)null);
+        [Fact]
+        public async Task GetDtoByIdAsync_ShouldThrow_WhenTypeNotFound()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
+            var typeId = Guid.NewGuid();
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.DeleteAsync(id));
-        //}
+            var op = new FinancialOperation { Id = id, TypeId = typeId };
 
-        //[Fact]
-        //public async Task DeleteAsync_ShouldCallDelete_WhenFound()
-        //{
-        //    var id = Guid.NewGuid();
+            _operationsRepositoryMock.Setup(r => r.GetByIdAsync(userId, id)).ReturnsAsync(op);
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, typeId)).ReturnsAsync((OperationType?)null);
 
-        //    _operationsRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(new FinancialOperation());
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                _service.GetDtoByIdAsync(userId, id));
+        }
 
-        //    await _service.DeleteAsync(id);
+        // ---------- CreateAsync ----------
 
-        //    _operationsRepositoryMock.Verify(r => r.DeleteAsync(id), Times.Once);
-        //}
+        [Fact]
+        public async Task CreateAsync_ShouldCreateOperation_WhenValid()
+        {
+            var userId = Guid.NewGuid();
+            var typeId = Guid.NewGuid();
+
+            var dto = new CreateFinancialOperationDto
+            {
+                Amount = 100,
+                OperationTypeId = typeId,
+                Date = DateTime.Now
+            };
+
+            var type = new OperationType { Id = typeId, Name = "Food" };
+
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, typeId)).ReturnsAsync(type);
+
+            var result = await _service.CreateAsync(userId, dto);
+
+            _operationsRepositoryMock.Verify(r => r.AddAsync(It.IsAny<FinancialOperation>()), Times.Once);
+            Assert.Equal(100, result.Amount);
+        }
+
+        [Fact]
+        public async Task CreateAsync_ShouldThrow_WhenAmountInvalid()
+        {
+            var userId = Guid.NewGuid();
+            var typeId = Guid.NewGuid();
+
+            var dto = new CreateFinancialOperationDto
+            {
+                Amount = 0,
+                OperationTypeId = typeId,
+                Date = DateTime.Now
+            };
+
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.CreateAsync(userId, dto));
+        }
+
+        [Fact]
+        public async Task CreateAsync_ShouldThrow_WhenTypeNotExists()
+        {
+            var userId = Guid.NewGuid();
+            var typeId = Guid.NewGuid();
+
+            var dto = new CreateFinancialOperationDto
+            {
+                Amount = 100,
+                OperationTypeId = typeId,
+                Date = DateTime.Now
+            };
+
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, typeId)).ReturnsAsync((OperationType?)null);
+
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.CreateAsync(userId, dto));
+        }
+
+        // ---------- UpdateAsync ----------
+
+        [Fact]
+        public async Task UpdateAsync_ShouldUpdate_WhenValid()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
+            var typeId = Guid.NewGuid();
+
+            var existing = new FinancialOperation { Id = id, UserId = userId };
+
+            var dto = new UpdateFinancialOperationDto
+            {
+                Id = id,
+                Amount = 50,
+                OperationTypeId = typeId,
+                Date = DateTime.Today
+            };
+
+            var type = new OperationType { Id = typeId, Name = "Food" };
+
+            _operationsRepositoryMock.Setup(r => r.GetByIdAsync(userId, id)).ReturnsAsync(existing);
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, typeId)).ReturnsAsync(type);
+
+            var result = await _service.UpdateAsync(userId, dto);
+
+            _operationsRepositoryMock.Verify(r => r.UpdateAsync(existing), Times.Once);
+            Assert.Equal(50, result.Amount);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_ShouldThrow_WhenNotFound()
+        {
+            var userId = Guid.NewGuid();
+
+            var dto = new UpdateFinancialOperationDto
+            {
+                Id = Guid.NewGuid(),
+                Amount = 50,
+                OperationTypeId = Guid.NewGuid(),
+                Date = DateTime.Today
+            };
+
+            _operationsRepositoryMock.Setup(r => r.GetByIdAsync(userId, dto.Id)).ReturnsAsync((FinancialOperation?)null);
+
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.UpdateAsync(userId, dto));
+        }
+
+        // ---------- DeleteAsync ----------
+
+        [Fact]
+        public async Task DeleteAsync_ShouldCallRepositoryDelete()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
+
+            var op = new FinancialOperation { Id = id };
+
+            _operationsRepositoryMock.Setup(r => r.GetByIdAsync(userId, id)).ReturnsAsync(op);
+
+            await _service.DeleteAsync(userId, id);
+
+            _operationsRepositoryMock.Verify(r => r.DeleteAsync(userId, id), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldThrow_WhenNotFound()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
+
+            _operationsRepositoryMock.Setup(r => r.GetByIdAsync(userId, id)).ReturnsAsync((FinancialOperation?)null);
+
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.DeleteAsync(userId, id));
+        }
     }
 
 }

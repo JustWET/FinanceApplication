@@ -1,95 +1,112 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
 using PersonalFinanceDataManager.Core.Controllers;
 using PersonalFinanceDataManager.Core.DTOs;
 using PersonalFinanceDataManager.Core.Services.Interfaces;
+using System.Security.Claims;
 
 namespace PersonalFinanceDataManager.Tests.Controllers
 {
     public class ReportsControllerTests
     {
-        private readonly Mock<IReportsService> _reportsServiceMock;
+        private readonly Mock<IReportsService> _serviceMock;
         private readonly ReportsController _controller;
+        private readonly Guid _userId;
 
         public ReportsControllerTests()
         {
-            _reportsServiceMock = new Mock<IReportsService>();
-            _controller = new ReportsController(_reportsServiceMock.Object);
+            _serviceMock = new Mock<IReportsService>();
+            _controller = new ReportsController(_serviceMock.Object);
+
+            _userId = Guid.NewGuid();
+
+            var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, _userId.ToString())
+            }, "TestAuth"));
+
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = user }
+            };
         }
 
-        //[Fact]
-        //public async Task GetDailyReport_ShouldReturnBadRequest_WhenDateIsDefault()
-        //{
-        //    var result = await _controller.GetDailyReport(default);
+        // ---------- DAILY REPORT ----------
 
-        //    Assert.IsType<BadRequestObjectResult>(result);
-        //    _reportsServiceMock.Verify(s => s.GetDailyReportAsync(It.IsAny<DateTime>()), Times.Never);
-        //}
+        [Fact]
+        public async Task GetDailyReport_ShouldReturnBadRequest_WhenDateIsDefault()
+        {
+            var result = await _controller.GetDailyReport(default);
 
-        //[Fact]
-        //public async Task GetDailyReport_ShouldReturnOk_WithReport()
-        //{
-        //    var date = DateTime.Today;
-        //    var report = new FinancialReportDto();
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Invalid date.", bad.Value);
+        }
 
-        //    _reportsServiceMock
-        //        .Setup(s => s.GetDailyReportAsync(date))
-        //        .ReturnsAsync(report);
+        [Fact]
+        public async Task GetDailyReport_ShouldReturnOk_WhenValid()
+        {
+            var date = new DateTime(2025, 1, 10);
 
-        //    var result = await _controller.GetDailyReport(date);
+            var report = new FinancialReportDto
+            {
+                TotalIncome = 100,
+                TotalExpenses = 50
+            };
 
-        //    var okResult = Assert.IsType<OkObjectResult>(result);
-        //    Assert.Equal(report, okResult.Value);
-        //    _reportsServiceMock.Verify(s => s.GetDailyReportAsync(date), Times.Once);
-        //}
+            _serviceMock
+                .Setup(s => s.GetDailyReportAsync(_userId, date))
+                .ReturnsAsync(report);
 
-        //[Fact]
-        //public async Task GetPeriodReport_ShouldReturnBadRequest_WhenStartDateInvalid()
-        //{
-        //    var result = await _controller.GetPeriodReport(default, DateTime.Today);
+            var result = await _controller.GetDailyReport(date);
 
-        //    Assert.IsType<BadRequestObjectResult>(result);
-        //    _reportsServiceMock.Verify(s => s.GetPeriodReportAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Never);
-        //}
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(report, ok.Value);
+        }
 
-        //[Fact]
-        //public async Task GetPeriodReport_ShouldReturnBadRequest_WhenEndDateInvalid()
-        //{
-        //    var result = await _controller.GetPeriodReport(DateTime.Today, default);
+        // ---------- PERIOD REPORT ----------
 
-        //    Assert.IsType<BadRequestObjectResult>(result);
-        //    _reportsServiceMock.Verify(s => s.GetPeriodReportAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Never);
-        //}
+        [Fact]
+        public async Task GetPeriodReport_ShouldReturnBadRequest_WhenDatesDefault()
+        {
+            var result = await _controller.GetPeriodReport(default, default);
 
-        //[Fact]
-        //public async Task GetPeriodReport_ShouldReturnBadRequest_WhenEndDateBeforeStart()
-        //{
-        //    var start = DateTime.Today;
-        //    var end = start.AddDays(-1);
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Invalid date range.", bad.Value);
+        }
 
-        //    var result = await _controller.GetPeriodReport(start, end);
+        [Fact]
+        public async Task GetPeriodReport_ShouldReturnBadRequest_WhenEndBeforeStart()
+        {
+            var start = new DateTime(2025, 1, 10);
+            var end = new DateTime(2025, 1, 5);
 
-        //    Assert.IsType<BadRequestObjectResult>(result);
-        //    _reportsServiceMock.Verify(s => s.GetPeriodReportAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Never);
-        //}
+            var result = await _controller.GetPeriodReport(start, end);
 
-        //[Fact]
-        //public async Task GetPeriodReport_ShouldReturnOk_WithReport()
-        //{
-        //    var start = DateTime.Today.AddDays(-7);
-        //    var end = DateTime.Today;
-        //    var report = new FinancialReportDto();
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("End date must be after start date.", bad.Value);
+        }
 
-        //    _reportsServiceMock
-        //        .Setup(s => s.GetPeriodReportAsync(start, end))
-        //        .ReturnsAsync(report);
+        [Fact]
+        public async Task GetPeriodReport_ShouldReturnOk_WhenValidRange()
+        {
+            var start = new DateTime(2025, 1, 1);
+            var end = new DateTime(2025, 1, 31);
 
-        //    var result = await _controller.GetPeriodReport(start, end);
+            var report = new FinancialReportDto
+            {
+                TotalIncome = 500,
+                TotalExpenses = 300
+            };
 
-        //    var okResult = Assert.IsType<OkObjectResult>(result);
-        //    Assert.Equal(report, okResult.Value);
+            _serviceMock
+                .Setup(s => s.GetPeriodReportAsync(_userId, start, end))
+                .ReturnsAsync(report);
 
-        //    _reportsServiceMock.Verify(s => s.GetPeriodReportAsync(start, end), Times.Once);
-        //}
+            var result = await _controller.GetPeriodReport(start, end);
+
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(report, ok.Value);
+        }
     }
 }

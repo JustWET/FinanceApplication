@@ -1,4 +1,5 @@
 ﻿using Moq;
+using PersonalFinanceDataManager.Core.DTOs.OperationType;
 using PersonalFinanceDataManager.Core.Services;
 using PersonalFinanceDataManager.Data.Repositories;
 using PersonalFinanceDataManager.Data.Repositories.Interfaces;
@@ -19,145 +20,293 @@ namespace PersonalFinanceDataManager.Tests.Services
             _service = new OperationTypesService(_operationsRepositoryMock.Object, _typesRepositoryMock.Object);
         }
 
-        //[Fact]
-        //public async Task GetAllAsync_ShouldReturnListOfOperationTypes()
-        //{
-        //    var items = new List<OperationType>
-        //    {
-        //        new OperationType { Id = Guid.NewGuid(), Name = "Test" }
-        //    };
+        [Fact]
+        public async Task GetAllAsync_ReturnsMappedDtos()
+        {
+            var userId = Guid.NewGuid();
 
-        //    _typesRepositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(items);
+            var entities = new List<OperationType>
+            {
+                new OperationType { Id = Guid.NewGuid(), UserId = userId, Name = "A", IsIncome = true, Description = "D1" },
+                new OperationType { Id = Guid.NewGuid(), UserId = userId, Name = "B", IsIncome = false, Description = "D2" }
+            };
 
-        //    var result = await _service.GetAllAsync();
+            _typesRepositoryMock.Setup(r => r.GetAllAsync(userId))
+                .ReturnsAsync(entities);
 
-        //    Assert.NotNull(result);
-        //    Assert.Single(result);
-        //}
+            var result = await _service.GetAllAsync(userId);
 
-        //[Fact]
-        //public async Task GetAllAsync_ShouldReturnEmptyList_WhenNoItems()
-        //{
-        //    _typesRepositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<OperationType>());
+            Assert.Equal(2, result.Count);
+            Assert.Equal(entities[0].Id, result[0].Id);
+            Assert.Equal(entities[0].Name, result[0].Name);
+            Assert.Equal(entities[1].IsIncome, result[1].IsIncome);
+        }
 
-        //    var result = await _service.GetAllAsync();
+        // ---------- GetByIdAsync ----------
 
-        //    Assert.NotNull(result);
-        //    Assert.Empty(result);
-        //}
+        [Fact]
+        public async Task GetByIdAsync_ReturnsDto_WhenFound()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
 
-        //[Fact]
-        //public async Task GetByIdAsync_ShouldReturnEntity_WhenExists()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var item = new OperationType { Id = id, Name = "Test" };
+            var entity = new OperationType
+            {
+                Id = id,
+                UserId = userId,
+                Name = "Test",
+                IsIncome = true,
+                Description = "Desc"
+            };
 
-        //    _typesRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(item);
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, id))
+                .ReturnsAsync(entity);
 
-        //    var result = await _service.GetByIdAsync(id);
+            var result = await _service.GetByIdAsync(userId, id);
 
-        //    Assert.NotNull(result);
-        //    Assert.Equal(id, result.Id);
-        //}
+            Assert.Equal(entity.Id, result.Id);
+            Assert.Equal(entity.Name, result.Name);
+        }
 
-        //[Fact]
-        //public async Task GetByIdAsync_ShouldThrowException_WhenNotFound()
-        //{
-        //    var id = Guid.NewGuid();
-        //    _typesRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((OperationType)null);
+        [Fact]
+        public async Task GetByIdAsync_Throws_WhenNotFound()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.GetByIdAsync(id));
-        //}
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, id))
+                .ReturnsAsync((OperationType?)null);
 
-        //[Fact]
-        //public async Task CreateAsync_ShouldReturnCreatedEntity()
-        //{
-        //    var item = new OperationType { Id = Guid.NewGuid(), Name = "CreateTest" };
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.GetByIdAsync(userId, id));
+        }
 
-        //    _typesRepositoryMock.Setup(r => r.AddAsync(item)).Returns(Task.CompletedTask);
+        // ---------- CreateAsync ----------
 
-        //    var result = await _service.CreateAsync(item);
+        [Fact]
+        public async Task CreateAsync_Throws_WhenNameEmpty()
+        {
+            var userId = Guid.NewGuid();
 
-        //    Assert.Equal(item.Name, result.Name);
-        //    _typesRepositoryMock.Verify(r => r.AddAsync(item), Times.Once);
-        //}
+            var dto = new CreateOperationTypeDto
+            {
+                Name = "   ",
+                IsIncome = true
+            };
 
-        //[Fact]
-        //public async Task CreateAsync_ShouldThrowException_WhenNameIsEmpty()
-        //{
-        //    var item = new OperationType { Id = Guid.NewGuid(), Name = "" };
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.CreateAsync(userId, dto));
+        }
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.CreateAsync(item));
-        //}
+        [Fact]
+        public async Task CreateAsync_Throws_WhenNameExists()
+        {
+            var userId = Guid.NewGuid();
 
-        //[Fact]
-        //public async Task UpdateAsync_ShouldUpdateEntity_WhenExists()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var existing = new OperationType { Id = id, Name = "Old", Description = "OldDesc" };
-        //    var updated = new OperationType { Id = id, Name = "New", Description = "NewDesc" };
+            _typesRepositoryMock.Setup(r => r.ExistsWithNameAsync(userId, "Food", null))
+                .ReturnsAsync(true);
 
-        //    _typesRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(existing);
-        //    _typesRepositoryMock.Setup(r => r.UpdateAsync(existing)).Returns(Task.CompletedTask);
+            var dto = new CreateOperationTypeDto
+            {
+                Name = "Food",
+                IsIncome = false
+            };
 
-        //    var result = await _service.UpdateAsync(updated);
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.CreateAsync(userId, dto));
+        }
 
-        //    Assert.Equal("New", result.Name);
-        //    Assert.Equal("NewDesc", result.Description);
-        //    _typesRepositoryMock.Verify(r => r.UpdateAsync(existing), Times.Once);
-        //}
+        [Fact]
+        public async Task CreateAsync_CreatesAndReturnsDto()
+        {
+            var userId = Guid.NewGuid();
 
-        //[Fact]
-        //public async Task UpdateAsync_ShouldThrowException_WhenNotFound()
-        //{
-        //    var updated = new OperationType { Id = Guid.NewGuid(), Name = "New" };
+            _typesRepositoryMock.Setup(r => r.ExistsWithNameAsync(userId, "Salary", null))
+                .ReturnsAsync(false);
 
-        //    _typesRepositoryMock.Setup(r => r.GetByIdAsync(updated.Id)).ReturnsAsync((OperationType)null);
+            OperationType? savedEntity = null;
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.UpdateAsync(updated));
-        //}
+            _typesRepositoryMock.Setup(r => r.AddAsync(It.IsAny<OperationType>()))
+                .Callback<OperationType>(e => savedEntity = e)
+                .Returns(Task.CompletedTask);
 
-        //[Fact]
-        //public async Task DeleteAsync_ShouldDeleteEntity_WhenExistsAndNoLinkedOperations()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var item = new OperationType { Id = id, Name = "ToDelete" };
+            var dto = new CreateOperationTypeDto
+            {
+                Name = "Salary",
+                IsIncome = true,
+                Description = "Monthly"
+            };
 
-        //    _typesRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(item);
-        //    _operationsRepositoryMock.Setup(r => r.ExistsByTypeIdAsync(id)).ReturnsAsync(false);
-        //    _typesRepositoryMock.Setup(r => r.DeleteAsync(id)).Returns(Task.CompletedTask);
+            var result = await _service.CreateAsync(userId, dto);
 
-        //    await _service.DeleteAsync(id);
+            Assert.NotNull(savedEntity);
+            Assert.Equal(userId, savedEntity!.UserId);
+            Assert.Equal(dto.Name, result.Name);
 
-        //    _typesRepositoryMock.Verify(r => r.DeleteAsync(id), Times.Once);
-        //    _operationsRepositoryMock.Verify(r => r.ExistsByTypeIdAsync(id), Times.Once);
-        //}
+            _typesRepositoryMock.Verify(r => r.AddAsync(It.IsAny<OperationType>()), Times.Once);
+        }
 
-        //[Fact]
-        //public async Task DeleteAsync_ShouldThrowException_WhenTypeDoesNotExist()
-        //{
-        //    var id = Guid.NewGuid();
-        //    _typesRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((OperationType)null);
+        // ---------- UpdateAsync ----------
 
-        //    await Assert.ThrowsAsync<Exception>(() => _service.DeleteAsync(id));
+        [Fact]
+        public async Task UpdateAsync_Throws_WhenNotFound()
+        {
+            var userId = Guid.NewGuid();
 
-        //    _typesRepositoryMock.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
-        //}
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, It.IsAny<Guid>()))
+                .ReturnsAsync((OperationType?)null);
 
-        //[Fact]
-        //public async Task DeleteAsync_ShouldThrowException_WhenLinkedOperationsExist()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var item = new OperationType { Id = id, Name = "Blocked" };
+            var dto = new UpdateOperationTypeDto
+            {
+                Id = Guid.NewGuid(),
+                Name = "Test"
+            };
 
-        //    _typesRepositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(item);
-        //    _operationsRepositoryMock.Setup(r => r.ExistsByTypeIdAsync(id)).ReturnsAsync(true);
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.UpdateAsync(userId, dto));
+        }
 
-        //    var ex = await Assert.ThrowsAsync<Exception>(() => _service.DeleteAsync(id));
+        [Fact]
+        public async Task UpdateAsync_Throws_WhenNameExists()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
 
-        //    Assert.Equal("Cannot delete operation type because it is used by existing financial operations.", ex.Message);
+            var entity = new OperationType { Id = id, UserId = userId };
 
-        //    _typesRepositoryMock.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
-        //}
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, id))
+                .ReturnsAsync(entity);
+
+            _typesRepositoryMock.Setup(r => r.ExistsWithNameAsync(userId, "Food", id))
+                .ReturnsAsync(true);
+
+            var dto = new UpdateOperationTypeDto
+            {
+                Id = id,
+                Name = "Food"
+            };
+
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.UpdateAsync(userId, dto));
+        }
+
+        [Fact]
+        public async Task UpdateAsync_UpdatesEntity()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
+
+            var entity = new OperationType
+            {
+                Id = id,
+                UserId = userId,
+                Name = "Old",
+                IsIncome = false
+            };
+
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, id))
+                .ReturnsAsync(entity);
+
+            _typesRepositoryMock.Setup(r => r.ExistsWithNameAsync(userId, "New", id))
+                .ReturnsAsync(false);
+
+            var dto = new UpdateOperationTypeDto
+            {
+                Id = id,
+                Name = "New",
+                IsIncome = true,
+                Description = "Updated"
+            };
+
+            var result = await _service.UpdateAsync(userId, dto);
+
+            Assert.Equal("New", entity.Name);
+            Assert.True(entity.IsIncome);
+            Assert.Equal("New", result.Name);
+
+            _typesRepositoryMock.Verify(r => r.UpdateAsync(entity), Times.Once);
+        }
+
+        // ---------- DeleteAsync ----------
+
+        [Fact]
+        public async Task DeleteAsync_Throws_WhenNotFound()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
+
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, id))
+                .ReturnsAsync((OperationType?)null);
+
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.DeleteAsync(userId, id));
+        }
+
+        [Fact]
+        public async Task DeleteAsync_Throws_WhenLinkedOperationsExist()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
+
+            var entity = new OperationType { Id = id, UserId = userId };
+
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, id))
+                .ReturnsAsync(entity);
+
+            _operationsRepositoryMock.Setup(r => r.ExistsByTypeIdAsync(userId, id))
+                .ReturnsAsync(true);
+
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.DeleteAsync(userId, id));
+        }
+
+        [Fact]
+        public async Task DeleteAsync_Deletes_WhenValid()
+        {
+            var userId = Guid.NewGuid();
+            var id = Guid.NewGuid();
+
+            var entity = new OperationType { Id = id, UserId = userId };
+
+            _typesRepositoryMock.Setup(r => r.GetByIdAsync(userId, id))
+                .ReturnsAsync(entity);
+
+            _operationsRepositoryMock.Setup(r => r.ExistsByTypeIdAsync(userId, id))
+                .ReturnsAsync(false);
+
+            await _service.DeleteAsync(userId, id);
+
+            _typesRepositoryMock.Verify(r => r.DeleteAsync(userId, id), Times.Once);
+        }
+
+        // ---------- GetOperationTypeUsageAsync ----------
+
+        [Fact]
+        public async Task GetOperationTypeUsageAsync_GroupsAndCounts()
+        {
+            var userId = Guid.NewGuid();
+            var type1 = Guid.NewGuid();
+            var type2 = Guid.NewGuid();
+
+            var operations = new List<FinancialOperation>
+            {
+                new FinancialOperation { UserId = userId, TypeId = type1 },
+                new FinancialOperation { UserId = userId, TypeId = type1 },
+                new FinancialOperation { UserId = userId, TypeId = type2 }
+            };
+
+            _operationsRepositoryMock.Setup(r => r.GetAllAsync(userId))
+                .ReturnsAsync(operations);
+
+            var result = await _service.GetOperationTypeUsageAsync(userId);
+
+            Assert.Equal(2, result.Count);
+
+            var t1 = result.First(x => x.OperationTypeId == type1);
+            var t2 = result.First(x => x.OperationTypeId == type2);
+
+            Assert.Equal(2, t1.Count);
+            Assert.Equal(1, t2.Count);
+        }
     }
 }

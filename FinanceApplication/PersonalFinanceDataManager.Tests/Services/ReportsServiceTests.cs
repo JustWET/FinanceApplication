@@ -2,6 +2,7 @@
 using PersonalFinanceDataManager.Core.Services;
 using PersonalFinanceDataManager.Domain.Entities;
 using PersonalFinanceDataManager.Data.Repositories.Interfaces;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace PersonalFinanceDataManager.Tests.Services
 {
@@ -18,72 +19,99 @@ namespace PersonalFinanceDataManager.Tests.Services
             _service = new ReportsService(_operationsRepoMock.Object, _typesRepoMock.Object);
         }
 
-        //[Fact]
-        //public async Task GetDailyReportAsync_ShouldReturnCorrectTotals()
-        //{
-        //    var date = DateTime.Today;
-        //    var typeIncome = new OperationType { Id = Guid.NewGuid(), Name = "Salary", IsIncome = true, Description = "Monthly income" };
-        //    var typeExpense = new OperationType { Id = Guid.NewGuid(), Name = "Food", IsIncome = false, Description = "Groceries" };
+        [Fact]
+        public async Task GetDailyReportAsync_ShouldReturnCorrectTotals()
+        {
+            var userId = Guid.NewGuid();
+            var date = DateTime.Today;
+            var incomeTypeId = Guid.NewGuid();
+            var expenseTypeId = Guid.NewGuid();
 
-        //    var operations = new List<FinancialOperation>
-        //    {
-        //        new FinancialOperation { Id = Guid.NewGuid(), Amount = 100, Date = date, TypeId = typeIncome.Id },
-        //        new FinancialOperation { Id = Guid.NewGuid(), Amount = 50, Date = date, TypeId = typeExpense.Id }
-        //    };
+            var operations = new List<FinancialOperation>
+            {
+                new FinancialOperation { Id = Guid.NewGuid(), UserId = userId, TypeId = incomeTypeId, Amount = 100, Date = date.AddHours(10)},
+                new FinancialOperation { Id = Guid.NewGuid(), UserId = userId, TypeId = expenseTypeId, Amount = 40, Date = date.AddHours(15)},
+                new FinancialOperation { Id = Guid.NewGuid(), UserId = userId, TypeId = expenseTypeId, Amount = 999, Date = date.AddDays(1)},
+            };
 
-        //    _operationsRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(operations);
-        //    _typesRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<OperationType> { typeIncome, typeExpense });
+            var types = new List<OperationType>
+            {
+                new OperationType { Id = incomeTypeId, Name = "Salary", IsIncome = true },
+                new OperationType { Id = expenseTypeId, Name = "Food", IsIncome = false }
+            };
 
-        //    var result = await _service.GetDailyReportAsync(date);
+            _operationsRepoMock.Setup(r => r.GetAllAsync(userId)).ReturnsAsync(operations);
+            _typesRepoMock.Setup(r => r.GetAllAsync(userId)).ReturnsAsync(types);
 
-        //    Assert.Equal(100, result.TotalIncome);
-        //    Assert.Equal(50, result.TotalExpenses);
-        //    Assert.Equal(2, result.Operations.Count);
-        //}
+            var report = await _service.GetDailyReportAsync(userId, date);
 
-        //[Fact]
-        //public async Task GetDailyReportAsync_ShouldIgnoreDeletedOperations()
-        //{
-        //    var date = DateTime.Today;
-        //    var type = new OperationType { Id = Guid.NewGuid(), Name = "Any", IsIncome = true, Description = "" };
+            Assert.Equal(100, report.TotalIncome);
+            Assert.Equal(40, report.TotalExpenses);
+            Assert.Equal(60, report.NetResult);
+            Assert.Equal(2, report.Operations.Count());
+        }
 
-        //    var operations = new List<FinancialOperation>
-        //    {
-        //        new FinancialOperation { Id = Guid.NewGuid(), Amount = 100, Date = date, TypeId = type.Id, IsDeleted = true }
-        //    };
+        [Fact]
+        public async Task GetDailyReportAsync_ShouldIgnoreDeletedOperations()
+        {
+            var userId = Guid.NewGuid();
+            var date = DateTime.Today;
+            var incomeTypeId = Guid.NewGuid();
+            var expenseTypeId = Guid.NewGuid();
 
-        //    _operationsRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(operations);
-        //    _typesRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<OperationType> { type });
+            var operations = new List<FinancialOperation>
+            {
+                new FinancialOperation { Id = Guid.NewGuid(), UserId = userId, TypeId = incomeTypeId, Amount = 100, Date = date.AddHours(10)},
+                new FinancialOperation { Id = Guid.NewGuid(), UserId = userId, TypeId = expenseTypeId, Amount = 40, Date = date.AddHours(15), IsDeleted = true},
+                new FinancialOperation { Id = Guid.NewGuid(), UserId = userId, TypeId = expenseTypeId, Amount = 999, Date = date.AddDays(1)},
+            };
 
-        //    var result = await _service.GetDailyReportAsync(date);
+            var types = new List<OperationType>
+            {
+                new OperationType { Id = incomeTypeId, Name = "Salary", IsIncome = true },
+                new OperationType { Id = expenseTypeId, Name = "Food", IsIncome = false }
+            };
 
-        //    Assert.Empty(result.Operations);
-        //    Assert.Equal(0, result.TotalIncome);
-        //    Assert.Equal(0, result.TotalExpenses);
-        //}
+            _operationsRepoMock.Setup(r => r.GetAllAsync(userId)).ReturnsAsync(operations);
+            _typesRepoMock.Setup(r => r.GetAllAsync(userId)).ReturnsAsync(types);
 
-        //[Fact]
-        //public async Task GetPeriodReportAsync_ShouldFilterDatesCorrectly()
-        //{
-        //    var start = new DateTime(2024, 1, 1);
-        //    var end = new DateTime(2024, 1, 31);
+            var report = await _service.GetDailyReportAsync(userId, date);
 
-        //    var type = new OperationType { Id = Guid.NewGuid(), Name = "Any", IsIncome = false, Description = "" };
+            Assert.Equal(100, report.TotalIncome);
+            Assert.Equal(0, report.TotalExpenses);
+            Assert.Equal(100, report.NetResult);
+            Assert.Equal(1, report.Operations.Count());
+        }
 
-        //    var operations = new List<FinancialOperation>
-        //    {
-        //        new FinancialOperation { Id = Guid.NewGuid(), Amount = 20, Date = new DateTime(2024, 1, 10), TypeId = type.Id },
-        //        new FinancialOperation { Id = Guid.NewGuid(), Amount = 30, Date = new DateTime(2024, 2, 1), TypeId = type.Id }
-        //    };
+        [Fact]
+        public async Task GetPeriodReportAsync_ShouldFilterDatesCorrectly()
+        {
+            var userId = Guid.NewGuid();
 
-        //    _operationsRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(operations);
-        //    _typesRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<OperationType> { type });
+            var start = new DateTime(2024, 1, 1);
+            var end = new DateTime(2024, 1, 31);
 
-        //    var result = await _service.GetPeriodReportAsync(start, end);
+            var typeId = Guid.NewGuid();
 
-        //    Assert.Single(result.Operations);
-        //    Assert.Equal(20, result.TotalExpenses);
-        //}
+            var operations = new List<FinancialOperation>
+            {
+                new FinancialOperation { Id = Guid.NewGuid(), UserId = userId, TypeId = typeId, Amount = 30, Date = new DateTime(2024, 1, 10)},
+                new FinancialOperation { Id = Guid.NewGuid(), UserId = userId, TypeId = typeId, Amount = 70, Date = new DateTime(2024, 2, 1)},
+            };
+
+            var types = new List<OperationType>
+            {
+                new OperationType { Id = typeId, Name = "Food", IsIncome = false }
+            };
+
+            _operationsRepoMock.Setup(r => r.GetAllAsync(userId)).ReturnsAsync(operations);
+            _typesRepoMock.Setup(r => r.GetAllAsync(userId)).ReturnsAsync(types);
+
+            var report = await _service.GetPeriodReportAsync(userId, start, end);
+
+            Assert.Single(report.Operations);
+            Assert.Equal(30, report.TotalExpenses);
+        }
     }
 
 }

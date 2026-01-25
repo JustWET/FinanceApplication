@@ -30,7 +30,8 @@ namespace PersonalFinanceDataManager.Core.Services
             return operations
                 .Select(o =>
                 {
-                    var type = types.First(t => t.Id == o.TypeId);
+                    var type = types.First(t => t.Id == o.TypeId)
+                        ?? throw new Exception("Operation type not found");
                     return MapToDto(o, type);
                 })
                 .ToList();

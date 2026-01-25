@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
 using PersonalFinanceDataManager.Core.Controllers;
+using PersonalFinanceDataManager.Core.DTOs.OperationType;
 using PersonalFinanceDataManager.Core.Services.Interfaces;
-using PersonalFinanceDataManager.Domain.Entities;
+using System.Security.Claims;
 
 
 namespace PersonalFinanceDataManager.Tests.Controllers
@@ -11,139 +13,191 @@ namespace PersonalFinanceDataManager.Tests.Controllers
     {
         private readonly Mock<IOperationTypesService> _serviceMock;
         private readonly OperationTypesController _controller;
+        private readonly Guid _userId;
 
         public OperationTypesControllerTests()
         {
             _serviceMock = new Mock<IOperationTypesService>();
             _controller = new OperationTypesController(_serviceMock.Object);
+
+            _userId = Guid.NewGuid();
+
+            var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, _userId.ToString())
+            }, "TestAuth"));
+
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = user }
+            };
         }
 
-        //[Fact]
-        //public async Task GetAll_ShouldReturnOk_WithData()
-        //{
-        //    var list = new List<OperationType> { new OperationType { Id = Guid.NewGuid(), Name = "Test" } };
-        //    _serviceMock.Setup(s => s.GetAllAsync()).ReturnsAsync(list);
+        // ---------- GET ALL ----------
 
-        //    var result = await _controller.GetAll();
+        [Fact]
+        public async Task GetAll_ShouldReturnOk_WithData()
+        {
+            var list = new List<OperationTypeDto>
+            {
+                new OperationTypeDto { Id = Guid.NewGuid(), Name = "Food" }
+            };
 
-        //    var okResult = Assert.IsType<OkObjectResult>(result);
-        //    Assert.Equal(list, okResult.Value);
-        //}
+            _serviceMock.Setup(s => s.GetAllAsync(_userId)).ReturnsAsync(list);
 
-        //[Fact]
-        //public async Task GetById_ShouldReturnOk_WhenExists()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var type = new OperationType { Id = id, Name = "Test" };
+            var result = await _controller.GetAll();
 
-        //    _serviceMock.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(type);
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(list, ok.Value);
+        }
 
-        //    var result = await _controller.GetById(id);
+        // ---------- GET BY ID ----------
 
-        //    var ok = Assert.IsType<OkObjectResult>(result);
-        //    Assert.Equal(type, ok.Value);
-        //}
+        [Fact]
+        public async Task GetById_ShouldReturnOk_WhenFound()
+        {
+            var id = Guid.NewGuid();
+            var dto = new OperationTypeDto { Id = id, Name = "Food" };
 
-        //[Fact]
-        //public async Task GetById_ShouldReturnNotFound_WhenMissing()
-        //{
-        //    var id = Guid.NewGuid();
-        //    _serviceMock.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((OperationType)null);
+            _serviceMock.Setup(s => s.GetByIdAsync(_userId, id)).ReturnsAsync(dto);
 
-        //    var result = await _controller.GetById(id);
+            var result = await _controller.GetById(id);
 
-        //    Assert.IsType<NotFoundResult>(result);
-        //}
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(dto, ok.Value);
+        }
 
-        //[Fact]
-        //public async Task Create_ShouldReturnCreated_WhenValidModel()
-        //{
-        //    var newType = new OperationType { Id = Guid.NewGuid(), Name = "Test" };
+        [Fact]
+        public async Task GetById_ShouldThrow_WhenServiceThrows()
+        {
+            var id = Guid.NewGuid();
 
-        //    _serviceMock.Setup(s => s.CreateAsync(newType)).ReturnsAsync(newType);
+            _serviceMock.Setup(s => s.GetByIdAsync(_userId, id))
+                .ThrowsAsync(new Exception("Operation type not found."));
 
-        //    var result = await _controller.Create(newType);
+            await Assert.ThrowsAsync<Exception>(() => _controller.GetById(id));
+        }
 
-        //    var created = Assert.IsType<CreatedAtActionResult>(result);
-        //    Assert.Equal(nameof(OperationTypesController.GetById), created.ActionName);
-        //    Assert.Equal(newType, created.Value);
-        //}
+        // ---------- CREATE ----------
 
-        //[Fact]
-        //public async Task Create_ShouldReturnBadRequest_WhenModelInvalid()
-        //{
-        //    var newType = new OperationType { Id = Guid.NewGuid() };
-        //    _controller.ModelState.AddModelError("Name", "Required");
+        [Fact]
+        public async Task Create_ShouldReturnCreatedAtAction()
+        {
+            var input = new CreateOperationTypeDto { Name = "Food" };
 
-        //    var result = await _controller.Create(newType);
+            var created = new OperationTypeDto
+            {
+                Id = Guid.NewGuid(),
+                Name = "Food"
+            };
 
-        //    Assert.IsType<BadRequestObjectResult>(result);
-        //}
+            _serviceMock.Setup(s => s.CreateAsync(_userId, input)).ReturnsAsync(created);
 
-        //[Fact]
-        //public async Task Update_ShouldReturnBadRequest_WhenIdMismatch()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var type = new OperationType { Id = Guid.NewGuid() };
+            var result = await _controller.Create(input);
 
-        //    var result = await _controller.Update(id, type);
+            var createdResult = Assert.IsType<CreatedAtActionResult>(result);
+            Assert.Equal(nameof(OperationTypesController.GetById), createdResult.ActionName);
+            Assert.Equal(created, createdResult.Value);
+        }
 
-        //    var bad = Assert.IsType<BadRequestObjectResult>(result);
-        //    Assert.Equal("ID mismatch", bad.Value);
-        //}
+        [Fact]
+        public async Task Create_ShouldReturnBadRequest_WhenModelInvalid()
+        {
+            _controller.ModelState.AddModelError("Name", "Required");
 
-        //[Fact]
-        //public async Task Update_ShouldReturnNotFound_WhenDoesNotExist()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var type = new OperationType { Id = id, Name = "Test" };
+            var result = await _controller.Create(new CreateOperationTypeDto());
 
-        //    _serviceMock.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((OperationType)null);
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
 
-        //    var result = await _controller.Update(id, type);
+        // ---------- UPDATE ----------
 
-        //    Assert.IsType<NotFoundResult>(result);
-        //}
+        [Fact]
+        public async Task Update_ShouldReturnBadRequest_WhenIdMismatch()
+        {
+            var input = new UpdateOperationTypeDto { Id = Guid.NewGuid() };
 
-        //[Fact]
-        //public async Task Update_ShouldReturnOk_WhenUpdated()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var type = new OperationType { Id = id, Name = "Test" };
+            var result = await _controller.Update(Guid.NewGuid(), input);
 
-        //    _serviceMock.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(type);
-        //    _serviceMock.Setup(s => s.UpdateAsync(type)).ReturnsAsync(type);
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("ID mismatch", bad.Value);
+        }
 
-        //    var result = await _controller.Update(id, type);
+        [Fact]
+        public async Task Update_ShouldThrow_WhenNotFound()
+        {
+            var id = Guid.NewGuid();
+            var input = new UpdateOperationTypeDto { Id = id };
 
-        //    var ok = Assert.IsType<OkObjectResult>(result);
-        //    Assert.Equal(type, ok.Value);
-        //}
+            _serviceMock.Setup(s => s.GetByIdAsync(_userId, id))
+                .ThrowsAsync(new Exception("Operation type not found."));
 
-        //[Fact]
-        //public async Task Delete_ShouldReturnNotFound_WhenMissing()
-        //{
-        //    var id = Guid.NewGuid();
-        //    _serviceMock.Setup(s => s.GetByIdAsync(id)).ReturnsAsync((OperationType)null);
+            await Assert.ThrowsAsync<Exception>(() => _controller.Update(id, input));
+        }
 
-        //    var result = await _controller.Delete(id);
+        [Fact]
+        public async Task Update_ShouldReturnOk_WhenSuccess()
+        {
+            var id = Guid.NewGuid();
+            var input = new UpdateOperationTypeDto { Id = id, Name = "New" };
 
-        //    Assert.IsType<NotFoundResult>(result);
-        //}
+            var updated = new OperationTypeDto { Id = id, Name = "New" };
 
-        //[Fact]
-        //public async Task Delete_ShouldReturnNoContent_WhenDeleted()
-        //{
-        //    var id = Guid.NewGuid();
-        //    var type = new OperationType { Id = id };
+            _serviceMock.Setup(s => s.GetByIdAsync(_userId, id)).ReturnsAsync(updated);
+            _serviceMock.Setup(s => s.UpdateAsync(_userId, input)).ReturnsAsync(updated);
 
-        //    _serviceMock.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(type);
+            var result = await _controller.Update(id, input);
 
-        //    var result = await _controller.Delete(id);
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(updated, ok.Value);
+        }
 
-        //    _serviceMock.Verify(s => s.DeleteAsync(id), Times.Once);
-        //    Assert.IsType<NoContentResult>(result);
-        //}
+        // ---------- DELETE ----------
+
+        [Fact]
+        public async Task Delete_ShouldThrow_WhenNotFound()
+        {
+            var id = Guid.NewGuid();
+
+            _serviceMock.Setup(s => s.GetByIdAsync(_userId, id))
+                .ThrowsAsync(new Exception("Operation type not found."));
+
+            await Assert.ThrowsAsync<Exception>(() => _controller.Delete(id));
+        }
+
+        [Fact]
+        public async Task Delete_ShouldReturnNoContent_WhenSuccess()
+        {
+            var id = Guid.NewGuid();
+
+            _serviceMock.Setup(s => s.GetByIdAsync(_userId, id))
+                .ReturnsAsync(new OperationTypeDto { Id = id });
+
+            _serviceMock.Setup(s => s.DeleteAsync(_userId, id))
+                .Returns(Task.CompletedTask);
+
+            var result = await _controller.Delete(id);
+
+            Assert.IsType<NoContentResult>(result);
+        }
+
+        // ---------- TYPE USAGE ----------
+
+        [Fact]
+        public async Task GetTypeUsage_ShouldReturnOk_WithData()
+        {
+            var list = new List<OperationTypeUsageDto>
+            {
+                new OperationTypeUsageDto { OperationTypeId = Guid.NewGuid(), Count = 3 }
+            };
+
+            _serviceMock.Setup(s => s.GetOperationTypeUsageAsync(_userId)).ReturnsAsync(list);
+
+            var result = await _controller.GetTypeUsage();
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            Assert.Equal(list, ok.Value);
+        }
     }
 
 }
