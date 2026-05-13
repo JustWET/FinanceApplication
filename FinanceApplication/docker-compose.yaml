@@ -24,7 +24,7 @@ services:
     depends_on:
       - db
     networks:
-    - app-network
+      - app-network
 
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: blazor-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: blazor
+
+  template:
+    metadata:
+      labels:
+        app: blazor
+
+    spec:
+      containers:
+      - name: finance-blazor
+
+        image: finance-blazor
+
+        imagePullPolicy: Never
+
+        ports:
+        - containerPort: 8080

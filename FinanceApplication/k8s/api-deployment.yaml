@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: api-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: api
+
+  template:
+    metadata:
+      labels:
+        app: api
+
+    spec:
+      containers:
+      - name: finance-api
+
+        image: finance-api
+
+        imagePullPolicy: Never
+
+        ports:
+        - containerPort: 8080
+
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+
+        - name: ConnectionStrings__DefaultConnection
+          value: "Server=db;Database=FinanceAppDb;User=sa;Password=MyStrong!Pass123;Encrypt=false;TrustServerCertificate=True;Integrated Security=False;"

@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: hostpath-reader
+
+spec:
+  volumes:
+  - name: shared-host-volume
+    hostPath:
+      path: /data/shared
+      type: DirectoryOrCreate
+
+  containers:
+  - name: reader
+
+    image: busybox
+
+    command:
+    - sh
+    - -c
+    - |
+      while true
+      do
+        echo "Reader pod output:"
+        cat /shared/shared-log.txt
+        sleep 5
+      done
+
+    volumeMounts:
+    - name: shared-host-volume
+      mountPath: /shared

@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: shared-volume-pod
+
+spec:
+  volumes:
+  - name: shared-data
+    emptyDir: {}
+
+  containers:
+
+  - name: writer
+
+    image: busybox
+
+    command:
+    - sh
+    - -c
+    - |
+      while true
+      do
+        echo "Log message from writer container $(date)" > /shared/log.txt
+        sleep 5
+      done
+
+    volumeMounts:
+    - name: shared-data
+      mountPath: /shared
+
+  - name: reader
+
+    image: busybox
+
+    command:
+    - sh
+    - -c
+    - |
+      while true
+      do
+        echo "Reader container output:"
+        cat /shared/log.txt
+        sleep 5
+      done
+
+    volumeMounts:
+    - name: shared-data
+      mountPath: /shared

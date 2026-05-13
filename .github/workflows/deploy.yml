@@ -1,0 +1,83 @@
+name: Finance App CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  build-test-deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # ---------- CHECKOUT ----------
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # ---------- .NET SETUP ----------
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    # ---------- RESTORE ----------
+
+    - name: Restore dependencies
+      run: |
+        dotnet restore FinanceApplication/FinanceApp.Blazor/FinanceApp.Blazor.csproj
+        dotnet restore FinanceApplication/FinanceApp.Blazor.Client/FinanceApp.Blazor.Client.csproj
+        dotnet restore FinanceApplication/PersonalFinanceDataManager.Core/PersonalFinanceDataManager.Core.csproj
+        dotnet restore FinanceApplication/PersonalFinanceDataManager.Data/PersonalFinanceDataManager.Data.csproj
+        dotnet restore FinanceApplication/PersonalFinanceDataManager.Domain/PersonalFinanceDataManager.Domain.csproj
+        dotnet restore FinanceApplication/PersonalFinanceDataManager.Tests/PersonalFinanceDataManager.Tests.csproj
+
+    # ---------- BUILD ----------
+
+    - name: Build projects
+      run: |
+        dotnet build FinanceApplication/FinanceApp.Blazor/FinanceApp.Blazor.csproj --configuration Release --no-restore
+        dotnet build FinanceApplication/FinanceApp.Blazor.Client/FinanceApp.Blazor.Client.csproj --configuration Release --no-restore
+        dotnet build FinanceApplication/PersonalFinanceDataManager.Core/PersonalFinanceDataManager.Core.csproj --configuration Release --no-restore
+        dotnet build FinanceApplication/PersonalFinanceDataManager.Data/PersonalFinanceDataManager.Data.csproj --configuration Release --no-restore
+        dotnet build FinanceApplication/PersonalFinanceDataManager.Domain/PersonalFinanceDataManager.Domain.csproj --configuration Release --no-restore
+
+    # ---------- TEST ----------
+
+    - name: Run tests
+      run: |
+        dotnet test FinanceApplication/PersonalFinanceDataManager.Tests/PersonalFinanceDataManager.Tests.csproj --configuration Release --no-build
+
+    # ---------- DOCKER ----------
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build API Docker image
+      run: |
+        docker build -t finance-api -f FinanceApplication/PersonalFinanceDataManager.Core/dockerfile FinanceApplication
+
+    - name: Build Blazor Docker image
+      run: |
+        docker build -t finance-blazor -f FinanceApplication/FinanceApp.Blazor/dockerfile FinanceApplication
+
+    # ---------- KUBERNETES ----------
+
+    - name: Validate Kubernetes manifests
+      run: |
+        echo "Checking Kubernetes files..."
+        ls FinanceApplication/k8s
+
+    # ---------- DEPLOY ----------
+
+    - name: Simulate deployment
+      run: |
+        echo "deploy.ps1 would run here"
+
+    - name: Pipeline completed
+      run: |
+        echo "CI/CD pipeline completed successfully"
